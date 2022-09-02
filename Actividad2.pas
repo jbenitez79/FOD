@@ -11,7 +11,7 @@ Nota: todos los archivos se encuentran ordenados por código de producto. En cad
 más registros de un determinado producto.
 *)
 
-Program Farmcia
+Program Farmacia
 type
     producto = record
         codigo: integer;
