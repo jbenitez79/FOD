@@ -12,6 +12,7 @@ más registros de un determinado producto.
 *)
 
 Program Farmacia;
+const valorA:=9999;
 type
     producto = record
         codigo: integer;
@@ -24,58 +25,90 @@ type
         codigo: integer;
         cantV: integer;
     end;
-    archProd: file of producto;
+    archMAE: file of producto;
     archDet: file of detalle;
     archText: file of text;
+
+    listaArchDet: array [1..4] of archDet;
+    listaMinDet: array [1..4] of detalle;
+
+procedure Leer(var det:archDet; var regDet:detalle);
+begin 
+    if(not EoF(det))then
+        read(det,regDet);
+    else 
+        regDet.codigo:=ValorA;
+end;    
+(*esto se debe reemplazar por un ArbolBinario o mejor por una MinHeap*)
+procedure minimo(var det:listaArchDet; var listMin:listaMinDet;var min:detalle);
 var
-    fmae: archProd;
-    fsuc: archDet;
-Procedure ActualizarMaestro(var f_mae: archProd, var f_suc: archDet, var f_text: archText)
-var    
-    r_mae: producto;
-    r_suc: detalle;
-begin
-   reset(f_mae);
-   reset(f_suc);
-   while not (EOF(f_suc)) do
-        read(f_suc,r_suc)
-        read(f_mae, r_mae)
-
-        (*busco el registro a actualizar*)
-        while(r_mae.codigo <> r_suc.codigo )do
-            read(f_mae, r_mae)
-        end
-
-        (*actualizo el registro en maestro *)
-        r_mae.stockDisp=r_mae.stockDisp - r_suc.cantV
-        seek(f_mae, FilePos(f_mae)-1)
-        write(f_mae, r_mae)
-
-        (*si el stock disponible es menor que stockMin*)
-        if(r_mae.stockDisp < r_mae.stockMin) then
-            write (f_text, r_mae.codigo)
-        end        
-    end
-    close(f_suc);
-    close(f_mae);
+    posMin:integer;
+Begin
+    min:=listMin[1];
+    posMin:=1
+    for i:=2 to 4 do
+    begin
+    if(listMin[i].codigo < min.codigo)then
+    begin
+        min:=listMin[i];
+        posMin:=i;        
+    end;    
+    Leer(det[posMin],listMin[posMin]);
 end;
 
+procedure Actualizar(var M:archMAE, var det:listaArchDet, var txt:archText );
+var
+listMin:listaMinDet; 
+min:detalle; 
+regM:producto;
 begin
-    assign(fmae, "maestro");
-    assign(ftext, "stockMinimo.txt");
-    rewrite(ftext)
-
-    assign(fsuc, "sucursal1");
-    ActualizarMaestro(fmae, fsuc, ftext)
-
-    assign(fsuc, "sucursal2");
-    ActualizarMaestro(fmae, fsuc, ftext)
-
-    assign(fsuc, "sucursal3");
-    ActualizarMaestro(fmae, fsuc, ftext)
-
-    assign(fsuc, "sucursal4");
-    ActualizarMaestro(fmae, fsuc, ftext)
-    
-    close(ftext);
+    for i:=1 to 4 do
+        reset(det[i]);
+        Leer(det[i],listMin[i]);
+    end;
+    reset(M);
+    minimo(det,listMin,min);
+    while(min.codigo <> ValorA)do
+    begin
+        while(min.codigo <> regM.codigo)do
+        begin
+            read(M,regM);
+        end;
+        while(regM.codigo = min.codigo) and (min.codigo <> ValorA)do
+        begin
+            regM.stockDisp:= regM.stockDisp + min.stockDisp;
+            minimo(det,resto,min);
+        end;
+        seek(M,filepos(M)-1);
+        write(M,regM);
+        if regM.stockDisp <= regM.stockMin then
+        begin
+            write(txt, regM);
+        end;
+    end;
+    close(M);
+    for i:=1 to 4 do
+        close(det[i]);
+    end;
 end;
+
+
+
+var
+    M:archMAE;
+    det:listaArchDet;
+    inf: archText
+    i:integer;
+    nombreDet:String;
+begin
+    for i:=1 to 4 do
+    begin
+        writeln('ESCRIBA UN NOMBRE PARA EL ARCHIVO: ');
+        read(nombreDet);
+        assign(det[i],nombreDet);
+    end;
+    assign(inf, "stockMin");
+    rewrite(inf);
+    Actualizar(M,det, inf);
+    close(inf);
+end.
